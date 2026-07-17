@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hong Kong Mahjong 香港麻雀</title>
+<style>
+:root{
+  --felt1:#2e6b53; --felt2:#1d4a38; --frame:#3d2418; --frame2:#5a3826;
+  --ivory:#f6f1e3; --ivory2:#e8e0cc; --tile-edge:#c9bfa4;
+  --back1:#1f5d54; --back2:#123f39;
+  --red:#b3372c; --blue:#1d4f8f; --green:#1e6b34; --ink:#22201c;
+  --gold:#d8b25a;
+}
+*{box-sizing:border-box; -webkit-user-select:none; user-select:none;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:#15130f;
+  font-family:-apple-system,"Helvetica Neue","PingFang HK","PingFang SC",sans-serif;
+  color:#e9e4d6; overflow:hidden;
+}
+#app{height:100vh;display:flex;flex-direction:column;}
+
+/* ---------- top bar ---------- */
+#topbar{
+  display:flex;align-items:center;gap:14px;padding:8px 16px;
+  background:linear-gradient(#241a12,#1a120c);border-bottom:2px solid var(--frame2);
+  flex:0 0 auto;
+}
+#topbar h1{font-size:16px;margin:0;font-weight:600;letter-spacing:.5px;color:var(--gold);}
+#topbar h1 span{color:#cfc6b0;font-weight:400;font-size:13px;margin-left:8px;}
+#topbar .spacer{flex:1;}
+.btn{
+  background:#3a2c1e;border:1px solid #6b5133;color:#eadfc6;border-radius:6px;
+  padding:5px 12px;font-size:13px;cursor:pointer;
+}
+.btn:hover{background:#4a3826;}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+/* ---------- table ---------- */
+#table{
+  flex:1;position:relative;
+  background:
+    radial-gradient(ellipse at 50% 42%, var(--felt1) 0%, var(--felt2) 75%, #143128 100%);
+  border:10px solid var(--frame);
+  box-shadow:inset 0 0 60px rgba(0,0,0,.45), inset 0 0 6px rgba(0,0,0,.6);
+  display:grid;
+  grid-template-columns:150px 1fr 150px;
+  grid-template-rows:120px 1fr 210px;
+  grid-template-areas:
+    "corner1 top corner2"
+    "left center right"
+    "corner3 bottom corner4";
+  overflow:hidden;
+}
+.seat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px;min-width:0;min-height:0;}
+#seat-top{grid-area:top;}
+#seat-left{grid-area:left;}
+#seat-right{grid-area:right;}
+#seat-bottom{grid-area:bottom;justify-content:flex-end;}
+
+.pname{
+  font-size:12px;color:#f0e9d5;background:rgba(0,0,0,.35);
+  padding:3px 10px;border-radius:12px;display:flex;gap:8px;align-items:center;white-space:nowrap;
+}
+.pname .wind{color:var(--gold);font-weight:700;}
+.pname .score{color:#bfe3c8;}
+.pname.turn{box-shadow:0 0 0 2px var(--gold);}
+
+.handrow{display:flex;gap:2px;align-items:flex-end;flex-wrap:nowrap;}
+.handcol{display:flex;flex-direction:column;gap:2px;align-items:center;}
+.meldrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:100%;}
+.meld{display:flex;gap:1px;background:rgba(0,0,0,.22);padding:2px;border-radius:4px;}
+.flowerrow{display:flex;gap:1px;}
+
+/* ---------- tiles ---------- */
+.tile{
+  position:relative;background:linear-gradient(160deg,var(--ivory) 0%,var(--ivory2) 100%);
+  border:1px solid var(--tile-edge);
+  border-bottom:3px solid #b3a88c;
+  border-radius:4px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--ink);
+  box-shadow:0 2px 3px rgba(0,0,0,.35);
+  font-family:"PingFang HK","PingFang SC","Hiragino Sans","Heiti SC",sans-serif;
+  flex:0 0 auto;
+}
+.tile .num{font-weight:700;line-height:1;}
+.tile .suit{font-weight:600;line-height:1;}
+.tile .idx{position:absolute;top:1px;left:2px;font-size:8px;color:#8b8371;font-weight:600;}
+.tile.c-red   .suit,.tile.c-red .num.single{color:var(--red);}
+.tile.c-blue  .suit{color:var(--blue);}
+.tile.c-green .suit{color:var(--green);}
+.tile .num{color:#22201c;}
+.tile.honor .num{font-size:0;}
+.tile .big{font-size:1em;font-weight:700;}
+.tile .white-drag{
+  width:60%;height:66%;border:2.5px solid var(--blue);border-radius:3px;
+}
+.tile .flower{color:#b0567e;font-weight:700;}
+.tile .fnum{font-size:9px;color:#8b8371;position:absolute;bottom:1px;right:3px;}
+
+/* sizes */
+.t-lg{width:46px;height:64px;font-size:18px;}
+.t-lg .num{font-size:20px;} .t-lg .suit{font-size:17px;} .t-lg .big{font-size:26px;}
+.t-md{width:34px;height:47px;}
+.t-md .num{font-size:15px;} .t-md .suit{font-size:12px;} .t-md .big{font-size:19px;} .t-md .idx{display:none;}
+.t-sm{width:27px;height:38px;}
+.t-sm .num{font-size:12px;} .t-sm .suit{font-size:10px;} .t-sm .big{font-size:15px;} .t-sm .idx{display:none;}
+
+.tile.back{
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 3px, transparent 3px 6px),
+    linear-gradient(160deg,var(--back1),var(--back2));
+  border-color:#0d2f2a;border-bottom-color:#0a2521;
+}
+.tile.back-h{width:34px;height:24px;}
+.tile.back-v{width:24px;height:34px;}
+
+#myhand .tile{cursor:pointer;transition:transform .09s ease;}
+#myhand .tile:hover{transform:translateY(-7px);}
+#myhand .tile.nohover{cursor:default;}
+#myhand .tile.nohover:hover{transform:none;}
+#myhand .tile.drawn{margin-left:14px;}
+.tile.hot{box-shadow:0 0 0 2px var(--gold),0 2px 3px rgba(0,0,0,.35);}
+
+/* ---------- center ---------- */
+#center{
+  grid-area:center;display:grid;min-width:0;min-height:0;
+  grid-template-columns:1fr minmax(140px,180px) 1fr;
+  grid-template-rows:1fr minmax(96px,120px) 1fr;
+  grid-template-areas:
+    ". dtop ."
+    "dleft hub dright"
+    ". dbot .";
+  gap:4px;padding:4px;
+}
+.dzone{display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start;min-width:0;min-height:0;overflow:hidden;}
+#d-top{grid-area:dtop;justify-content:center;align-content:flex-start;}
+#d-bottom{grid-area:dbot;justify-content:center;align-content:flex-end;}
+#d-left{grid-area:dleft;justify-content:flex-end;align-content:center;}
+#d-right{grid-area:dright;justify-content:flex-start;align-content:center;}
+#hub{
+  grid-area:hub;background:rgba(0,0,0,.4);border:1px solid rgba(216,178,90,.5);
+  border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:6px;text-align:center;
+}
+#hub .pw{
+  width:40px;height:40px;border-radius:6px;background:var(--red);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;
+  font-family:"PingFang HK",sans-serif;box-shadow:inset 0 0 6px rgba(0,0,0,.4);
+}
+#hub .wall{font-size:12px;color:#d9d2be;}
+#hub .handno{font-size:11px;color:#9aa28f;}
+
+/* ---------- status & actions ---------- */
+#status{
+  position:absolute;left:50%;bottom:232px;transform:translateX(-50%);
+  background:rgba(0,0,0,.55);padding:5px 16px;border-radius:16px;
+  font-size:13px;color:#f4eeda;white-space:nowrap;pointer-events:none;
+  transition:opacity .2s;z-index:5;
+}
+#actions{
+  position:absolute;left:50%;bottom:196px;transform:translateX(-50%);
+  display:flex;gap:8px;z-index:6;
+}
+.abtn{
+  background:linear-gradient(#8a2f24,#6e241b);border:1px solid #d8b25a;color:#ffe9c2;
+  font-size:15px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;
+  box-shadow:0 3px 6px rgba(0,0,0,.4);
+}
+.abtn small{display:block;font-size:10px;font-weight:400;color:#f3d9a8;}
+.abtn:hover{background:linear-gradient(#a0392b,#7e2a20);}
+.abtn.pass{background:linear-gradient(#3d4a42,#2a342e);border-color:#7b8a80;color:#dfe8e0;}
+.abtn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+
+/* ---------- overlay ---------- */
+#overlay{
+  position:fixed;inset:0;background:rgba(10,8,5,.78);display:none;
+  align-items:center;justify-content:center;z-index:20;
+}
+#overlay.show{display:flex;}
+#panel{
+  background:linear-gradient(#2b2117,#1d1610);border:2px solid var(--gold);
+  border-radius:14px;padding:26px 32px;max-width:640px;width:min(92vw,640px);
+  max-height:86vh;overflow:auto;box-shadow:0 10px 50px rgba(0,0,0,.6);
+}
+#panel h2{margin:0 0 6px;color:var(--gold);font-size:22px;}
+#panel h3{margin:14px 0 6px;color:#e8d9b0;font-size:14px;}
+#panel .fanline{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;border-bottom:1px dashed rgba(216,178,90,.25);}
+#panel .total{font-size:16px;font-weight:700;color:var(--gold);margin-top:8px;display:flex;justify-content:space-between;}
+#panel .tilespread{display:flex;gap:2px;flex-wrap:wrap;margin:8px 0;}
+#panel p{font-size:13.5px;line-height:1.55;color:#ddd4c0;}
+#panel .btnrow{margin-top:18px;display:flex;gap:10px;justify-content:flex-end;}
+#panel table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+#panel td,#panel th{padding:4px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08);}
+#panel .pos{color:#9fd8a8;} #panel .neg{color:#e08b7f;}
+
+@media (max-width:900px){
+  #table{grid-template-columns:110px 1fr 110px;grid-template-rows:100px 1fr 190px;}
+  .t-lg{width:38px;height:54px;} .t-lg .num{font-size:16px;} .t-lg .suit{font-size:14px;} .t-lg .big{font-size:21px;}
+  #status{bottom:206px;} #actions{bottom:172px;}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none!important;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <h1>香港麻雀 <span>Hong Kong Mahjong</span></h1>
+    <div class="spacer"></div>
+    <button class="btn" id="btn-rules">Rules 玩法</button>
+    <button class="btn" id="btn-new">New game 新局</button>
+  </div>
+
+  <div id="table">
+    <div class="seat" id="seat-top">
+      <div class="pname" id="pn2"></div>
+      <div class="handrow" id="hand2"></div>
+      <div class="meldrow" id="melds2"></div>
+      <div class="flowerrow" id="fl2"></div>
+    </div>
+    <div class="seat" id="seat-left">
+      <div class="pname" id="pn3"></div>
+      <div class="handcol" id="hand3"></div>
+      <div class="meldrow" id="melds3"></div>
+      <div class="flowerrow" id="fl3"></div>
+    </div>
+    <div class="seat" id="seat-right">
+      <div class="pname" id="pn1"></div>
+      <div class="handcol" id="hand1"></div>
+      <div class="meldrow" id="melds1"></div>
+      <div class="flowerrow" id="fl1"></div>
+    </div>
+
+    <div id="center">
+      <div class="dzone" id="d-top"></div>
+      <div class="dzone" id="d-left"></div>
+      <div id="hub">
+        <div class="pw" id="pwind">東</div>
+        <div class="wall" id="wallinfo"></div>
+        <div class="handno" id="handinfo"></div>
+      </div>
+      <div class="dzone" id="d-right"></div>
+      <div class="dzone" id="d-bottom"></div>
+    </div>
+
+    <div class="seat" id="seat-bottom">
+      <div class="meldrow" id="melds0"></div>
+      <div class="flowerrow" id="fl0"></div>
+      <div class="handrow" id="myhand"></div>
+      <div class="pname" id="pn0"></div>
+    </div>
+
+    <div id="status"></div>
+    <div id="actions"></div>
+  </div>
+</div>
+
+<div id="overlay"><div id="panel"></div></div>
+
+<script>
+"use strict";
+/* ================= tiles =================
+   0-8   萬 1-9 (characters)
+   9-17  筒 1-9 (dots)
+   18-26 條 1-9 (bamboo)
+   27-30 winds 東南西北
+   31-33 dragons 中發白
+   34-41 flowers 梅蘭菊竹 / seasons 春夏秋冬
+*/
+const CN_NUM=["一","二","三","四","五","六","七","八","九"];
+const WINDS=["東","南","西","北"];
+const DRAGONS=["中","發","白"];
+const FLOWERS=["梅","蘭","菊","竹","春","夏","秋","冬"];
+const WIND_EN=["East","South","West","North"];
+const NAMES=["You 你","Ah Bo 阿寶","Mei Ling 美玲","Uncle Chan 陳叔"];
+
+const suitOf=t=> t<9?0 : t<18?1 : t<27?2 : t<31?3 : t<34?4 : 5;
+const numOf =t=> t%9;
+const isFlower=t=> t>=34;
+const isHonor =t=> t>=27 && t<34;
+
+function tileName(t){
+  if(t<9)  return CN_NUM[t]+"萬";
+  if(t<18) return CN_NUM[t-9]+"筒";
+  if(t<27) return CN_NUM[t-18]+"條";
+  if(t<31) return WINDS[t-27];
+  if(t<34) return DRAGONS[t-31];
+  return FLOWERS[t-34];
+}
+
+function tileEl(t,size){
+  const d=document.createElement("div");
+  d.className="tile "+size;
+  if(t<27){
+    const s=suitOf(t), n=numOf(t);
+    d.classList.add(s===0?"c-red":s===1?"c-blue":"c-green");
+    d.innerHTML='<span class="idx">'+(n+1)+'</span><span class="num">'+CN_NUM[n]+
+      '</span><span class="suit">'+["萬","筒","條"][s]+'</span>';
+  }else if(t<31){
+    d.classList.add("honor");
+    d.innerHTML='<span class="big">'+WINDS[t-27]+'</span>';
+  }else if(t===31){ d.classList.add("honor","c-red");
+    d.innerHTML='<span class="big" style="color:var(--red)">中</span>';
+  }else if(t===32){ d.classList.add("honor");
+    d.innerHTML='<span class="big" style="color:var(--green)">發</span>';
+  }else if(t===33){ d.classList.add("honor");
+    d.innerHTML='<div class="white-drag"></div>';
+  }else{
+    d.classList.add("honor");
+    d.innerHTML='<span class="big flower">'+FLOWERS[t-34]+'</span><span class="fnum">'+((t-34)%4+1)+'</span>';
+  }
+  return d;
+}
+function backEl(cls){const d=document.createElement("div");d.className="tile back "+cls;return d;}
+
+/* ================= tiny click sound ================= */
+let AC=null;
+function click(freq){
+  try{
+    if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.frequency.value=freq||1400; o.type="triangle";
+    g.gain.setValueAtTime(.12,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.07);
+    o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime+.08);
+  }catch(e){}
+}
+
+/* ================= hand evaluation ================= */
+function countsOf(arr){const c=new Array(34).fill(0);for(const t of arr)c[t]++;return c;}
+
+// enumerate all standard decompositions (pair + melds) of concealed counts
+function decompose(counts){
+  const res=[]; const c=counts.slice();
+  for(let p=0;p<34;p++){
+    if(c[p]>=2){
+      c[p]-=2;
+      rec(0,[]);
+      c[p]+=2;
+    }
+    function rec(i,melds){
+      while(i<34&&c[i]===0)i++;
+      if(i>=34){res.push({pair:p,melds:melds.slice()});return;}
+      if(c[i]>=3){c[i]-=3;melds.push({t:"pung",tile:i});rec(i,melds);melds.pop();c[i]+=3;}
+      if(i<27&&(i%9)<=6&&c[i+1]>0&&c[i+2]>0){
+        c[i]--;c[i+1]--;c[i+2]--;melds.push({t:"chow",tile:i});rec(i,melds);melds.pop();
+        c[i]++;c[i+1]++;c[i+2]++;
+      }
+    }
+  }
+  return res;
+}
+
+const ORPHANS=[0,8,9,17,18,26,27,28,29,30,31,32,33];
+function isThirteenOrphans(counts){
+  let pair=false;
+  let total=0; for(let i=0;i<34;i++)total+=counts[i];
+  if(total!==14)return false;
+  for(const t of ORPHANS){
+    if(counts[t]===0)return false;
+    if(counts[t]===2)pair=true;
+    if(counts[t]>2)return false;
+  }
+  for(let i=0;i<34;i++)if(counts[i]>0&&!ORPHANS.includes(i))return false;
+  return pair;
+}
+
+function canWin(counts,meldCount){
+  if(meldCount===0&&isThirteenOrphans(counts))return true;
+  return decompose(counts).length>0;
+}
+
+// standard-hand shanten (0 = tenpai/waiting, -1 = winning)
+function shanten(counts,fixedMelds){
+  const c=counts.slice(); let best=8;
+  function evaluate(melds,partials,hasPair){
+    const m=melds+fixedMelds;
+    let p=partials;
+    if(m+p>4)p=4-m;
+    if(p<0)p=0;
+    const st=8-2*m-p-(hasPair?1:0);
+    if(st<best)best=st;
+  }
+  function rec(i,melds,partials,hasPair){
+    if(best<=-1)return;
+    while(i<34&&c[i]===0)i++;
+    if(i>=34){evaluate(melds,partials,hasPair);return;}
+    const n=c[i];
+    if(n>=3){c[i]-=3;rec(i,melds+1,partials,hasPair);c[i]+=3;}
+    if(i<27&&(i%9)<=6&&c[i+1]>0&&c[i+2]>0){
+      c[i]--;c[i+1]--;c[i+2]--;rec(i,melds+1,partials,hasPair);c[i]++;c[i+1]++;c[i+2]++;
+    }
+    if(n>=2){
+      if(!hasPair){c[i]-=2;rec(i,melds,partials,true);c[i]+=2;}
+      c[i]-=2;rec(i,melds,partials+1,hasPair);c[i]+=2;
+    }
+    if(i<27&&(i%9)<=7&&c[i+1]>0){c[i]--;c[i+1]--;rec(i,melds,partials+1,hasPair);c[i]++;c[i+1]++;}
+    if(i<27&&(i%9)<=6&&c[i+2]>0){c[i]--;c[i+2]--;rec(i,melds,partials+1,hasPair);c[i]++;c[i+2]++;}
+    c[i]--;rec(i,melds,partials,hasPair);c[i]++;
+  }
+  rec(0,0,0,false);
+  return best;
+}
+
+/* ================= fan scoring ================= */
+const PTS=[1,2,4,8,16,24,32,48,64,96,128,192,256,384];
+function payout(fan){return PTS[Math.min(fan,13)];}
+
+function calcFan(G,pi,winTile,selfDraw){
+  const P=G.players[pi];
+  const seat=(pi-G.dealer+4)%4;
+  const concealed=P.hand.slice(); concealed.push(winTile);
+  const counts=countsOf(concealed);
+  const fans=[];
+
+  // flowers first (independent of hand shape)
+  let flowerFan=0, matched=0;
+  for(const f of P.flowers){ if((f-34)%4===seat) matched++; }
+  if(P.flowers.length===0){fans.push(["無花 No flowers",1]);}
+  else if(P.flowers.length===8){fans.push(["八仙過海 All eight flowers",13]);}
+  else if(matched>0){fans.push(["正花 Seat flowers ×"+matched,matched]);}
+
+  if(P.melds.length===0&&isThirteenOrphans(counts)){
+    fans.push(["十三么 Thirteen Orphans",13]);
+    if(selfDraw)fans.push(["自摸 Self-draw",1]);
+    let total=Math.min(13,fans.reduce((a,f)=>a+f[1],0));
+    return {fans,fan:total,pts:payout(total)};
+  }
+
+  // enumerate decompositions, pick highest-fan interpretation
+  const decomps=decompose(counts);
+  let best=null;
+  for(const d of decomps){
+    const sets=[];
+    for(const m of P.melds) sets.push({t:(m.type==="chow"?"chow":"pung"),tile:m.tiles[0]});
+    for(const m of d.melds) sets.push(m);
+    const f=[];
+    const allP=sets.every(s=>s.t==="pung");
+    const allC=sets.every(s=>s.t==="chow");
+    if(allP)f.push(["對對糊 All pungs",3]);
+    else if(allC)f.push(["平糊 All chows",1]);
+
+    // suit purity over every tile in play
+    const allT=concealed.slice();
+    for(const m of P.melds)for(const t of m.tiles)allT.push(t);
+    const suits=new Set(), honors=allT.some(isHonor);
+    for(const t of allT)if(t<27)suits.add(suitOf(t));
+    if(suits.size===0)f.push(["字一色 All honors",10]);
+    else if(suits.size===1)f.push(honors?["混一色 Mixed one suit",3]:["清一色 Pure one suit",7]);
+
+    // dragons
+    let dPungs=0,dPair=(d.pair>=31);
+    for(const s of sets)if(s.t==="pung"&&s.tile>=31)dPungs++;
+    if(dPungs===3)f.push(["大三元 Big three dragons",8]);
+    else if(dPungs===2&&dPair)f.push(["小三元 Small three dragons",5]);
+    else if(dPungs>0)f.push(["役牌 Dragon pung ×"+dPungs,dPungs]);
+
+    // winds
+    let wPungs=0,wPair=(d.pair>=27&&d.pair<31);
+    for(const s of sets)if(s.t==="pung"&&s.tile>=27&&s.tile<31)wPungs++;
+    if(wPungs===4)f.push(["大四喜 Big four winds",13]);
+    else if(wPungs===3&&wPair)f.push(["小四喜 Small four winds",6]);
+    else{
+      for(const s of sets){
+        if(s.t!=="pung")continue;
+        if(s.tile===27+seat)f.push(["門風 Seat wind "+WINDS[seat],1]);
+        if(s.tile===27+G.prevailing)f.push(["圈風 Prevailing wind "+WINDS[G.prevailing],1]);
+      }
+    }
+    const tot=f.reduce((a,x)=>a+x[1],0);
+    if(!best||tot>best.tot)best={f,tot};
+  }
+  if(best)for(const x of best.f)fans.push(x);
+
+  if(selfDraw)fans.push(["自摸 Self-draw",1]);
+  const exposed=P.melds.some(m=>m.type!=="ckong");
+  if(!exposed&&!selfDraw)fans.push(["門前清 Concealed hand",1]);
+
+  let total=fans.reduce((a,x)=>a+x[1],0);
+  total=Math.min(total,13);
+  if(fans.length===0)fans.push(["雞糊 Chicken hand",0]);
+  return {fans,fan:total,pts:payout(total)};
+}
+
+/* ================= game state ================= */
+const G={
+  wall:[],players:[],dealer:0,prevailing:0,cur:0,
+  scores:[500,500,500,500],handNum:1,started:false,busy:false
+};
+
+function newPlayers(){
+  G.players=[0,1,2,3].map(i=>({hand:[],melds:[],flowers:[],discards:[]}));
+}
+function buildWall(){
+  const w=[];
+  for(let t=0;t<34;t++)for(let k=0;k<4;k++)w.push(t);
+  for(let t=34;t<42;t++)w.push(t);
+  for(let i=w.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[w[i],w[j]]=[w[j],w[i]];}
+  G.wall=w;
+}
+function drawFront(){return G.wall.length?G.wall.shift():null;}
+function drawBack(){return G.wall.length?G.wall.pop():null;}
+
+function sortHand(p){G.players[p].hand.sort((a,b)=>a-b);}
+
+// draw for player, auto-replacing flowers; returns tile or null (wall out)
+function drawFor(p,fromBack){
+  let t=fromBack?drawBack():drawFront();
+  while(t!==null&&isFlower(t)){
+    G.players[p].flowers.push(t);
+    t=drawBack();
+  }
+  return t;
+}
+
+/* ================= rendering ================= */
+const $=id=>document.getElementById(id);
+function render(){
+  // names / scores / winds
+  for(let i=0;i<4;i++){
+    const seat=(i-G.dealer+4)%4;
+    const el=$("pn"+i);
+    el.innerHTML='<span class="wind">'+WINDS[seat]+'</span>'+NAMES[i]+
+      ' <span class="score">'+G.scores[i]+'</span>';
+    el.classList.toggle("turn",G.cur===i&&G.started);
+  }
+  $("pwind").textContent=WINDS[G.prevailing];
+  $("wallinfo").textContent="Wall 牌牆: "+G.wall.length;
+  $("handinfo").textContent="Hand "+G.handNum;
+
+  // my hand
+  const mh=$("myhand");mh.innerHTML="";
+  const P0=G.players[0];
+  P0.hand.forEach((t,idx)=>{
+    const el=tileEl(t,"t-lg");
+    if(G.drawnIdx===idx)el.classList.add("drawn");
+    if(!G.canDiscard)el.classList.add("nohover");
+    el.addEventListener("click",()=>onTileClick(idx));
+    mh.appendChild(el);
+  });
+
+  // AI hands (backs)
+  const h1=$("hand1");h1.innerHTML="";
+  for(let k=0;k<G.players[1].hand.length;k++)h1.appendChild(backEl("back-h"));
+  const h2=$("hand2");h2.innerHTML="";
+  for(let k=0;k<G.players[2].hand.length;k++)h2.appendChild(backEl("back-v"));
+  const h3=$("hand3");h3.innerHTML="";
+  for(let k=0;k<G.players[3].hand.length;k++)h3.appendChild(backEl("back-h"));
+
+  // melds & flowers
+  for(let i=0;i<4;i++){
+    const mrow=$("melds"+i);mrow.innerHTML="";
+    for(const m of G.players[i].melds){
+      const box=document.createElement("div");box.className="meld";
+      if(m.type==="ckong"&&i!==0){
+        for(let k=0;k<4;k++)box.appendChild(backEl(i===2||i===0?"back-v":"back-v"));
+      }else{
+        for(const t of m.tiles)box.appendChild(tileEl(t,"t-md"));
+      }
+      mrow.appendChild(box);
+    }
+    const frow=$("fl"+i);frow.innerHTML="";
+    for(const f of G.players[i].flowers)frow.appendChild(tileEl(f,"t-sm"));
+  }
+
+  // discards
+  const zones=["d-bottom","d-right","d-top","d-left"];
+  for(let i=0;i<4;i++){
+    const z=$(zones[i]);z.innerHTML="";
+    G.players[i].discards.forEach((t,k)=>{
+      const el=tileEl(t,"t-sm");
+      if(G.lastDiscard&&G.lastDiscard.player===i&&k===G.players[i].discards.length-1&&G.lastDiscard.live)
+        el.classList.add("hot");
+      z.appendChild(el);
+    });
+  }
+}
+function status(msg){$("status").textContent=msg;}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ================= human input ================= */
+let humanResolve=null;
+function askButtons(list){
+  return new Promise(res=>{
+    humanResolve=res;
+    const bar=$("actions");bar.innerHTML="";
+    for(const b of list){
+      const el=document.createElement("button");
+      el.className="abtn"+(b.pass?" pass":"");
+      el.innerHTML=b.label+(b.sub?'<small>'+b.sub+'</small>':"");
+      el.addEventListener("click",()=>{bar.innerHTML="";humanResolve=null;res(b.value);});
+      bar.appendChild(el);
+    }
+  });
+}
+function clearButtons(){$("actions").innerHTML="";humanResolve=null;}
+let discardResolve=null;
+function onTileClick(idx){
+  if(G.canDiscard&&discardResolve){
+    const r=discardResolve;discardResolve=null;G.canDiscard=false;
+    r({action:"discard",idx});
+  }
+}
+
+/* ================= AI ================= */
+function aiChooseDiscard(p){
+  const P=G.players[p];
+  const m=P.melds.length;
+  let bestIdx=0,bestScore=Infinity;
+  for(let i=0;i<P.hand.length;i++){
+    const rest=P.hand.slice();rest.splice(i,1);
+    const st=shanten(countsOf(rest),m);
+    const t=P.hand[i];
+    // tie-break: prefer throwing isolated honors/terminals
+    let pen=0;
+    if(isHonor(t)){
+      const same=P.hand.filter(x=>x===t).length;
+      pen=same>=2?3:-2;
+    }else{
+      const n=numOf(t);
+      const near=P.hand.some(x=>x!==t&&suitOf(x)===suitOf(t)&&Math.abs(numOf(x)-numOf(t))<=2);
+      pen=(near?2:-1)+((n===0||n===8)?-0.5:0);
+    }
+    const score=st*10+pen;
+    if(score<bestScore){bestScore=score;bestIdx=i;}
+  }
+  return bestIdx;
+}
+function aiWantsPung(p,tile){
+  const P=G.players[p];
+  const c=countsOf(P.hand);
+  if(c[tile]<2)return false;
+  const before=shanten(c,P.melds.length);
+  const after=P.hand.slice();
+  let removed=0;
+  for(let i=after.length-1;i>=0&&removed<2;i--)if(after[i]===tile){after.splice(i,1);removed++;}
+  const st=shanten(countsOf(after),P.melds.length+1);
+  return st<before;
+}
+function aiWantsKongDiscard(p,tile){
+  const P=G.players[p];
+  return countsOf(P.hand)[tile]===3;
+}
+function aiWantsChow(p,tile){
+  const P=G.players[p];
+  const opts=chowOptions(P.hand,tile);
+  if(!opts.length)return null;
+  const before=shanten(countsOf(P.hand),P.melds.length);
+  let best=null,bestSt=before;
+  for(const o of opts){
+    const rest=P.hand.slice();
+    for(const t of o.remove){rest.splice(rest.indexOf(t),1);}
+    const st=shanten(countsOf(rest),P.melds.length+1);
+    if(st<bestSt){bestSt=st;best=o;}
+  }
+  return best;
+}
+function chowOptions(hand,tile){
+  if(tile>=27)return[];
+  const s=suitOf(tile),n=numOf(tile),base=s*9;
+  const has=x=>x>=0&&x<=8&&hand.includes(base+x);
+  const opts=[];
+  if(has(n-2)&&has(n-1))opts.push({tiles:[base+n-2,base+n-1,tile],remove:[base+n-2,base+n-1]});
+  if(has(n-1)&&has(n+1))opts.push({tiles:[base+n-1,tile,base+n+1],remove:[base+n-1,base+n+1]});
+  if(has(n+1)&&has(n+2))opts.push({tiles:[tile,base+n+1,base+n+2],remove:[base+n+1,base+n+2]});
+  return opts;
+}
+function playerCanWinOn(p,tile){
+  const P=G.players[p];
+  const c=countsOf(P.hand);c[tile]++;
+  return canWin(c,P.melds.length);
+}
+
+/* ================= flow ================= */
+async function startHand(){
+  buildWall();newPlayers();
+  G.lastDiscard=null;G.drawnIdx=-1;G.canDiscard=false;G.started=true;G.busy=true;
+  clearButtons();
+  // deal 13 each starting from dealer
+  for(let r=0;r<13;r++)for(let k=0;k<4;k++){
+    const p=(G.dealer+k)%4;
+    G.players[p].hand.push(drawFront());
+  }
+  // replace flowers dealt
+  for(let k=0;k<4;k++){
+    const p=(G.dealer+k)%4,P=G.players[p];
+    for(let i=P.hand.length-1;i>=0;i--){
+      if(isFlower(P.hand[i])){P.flowers.push(P.hand[i]);P.hand.splice(i,1);}
+    }
+    while(P.hand.length<13){
+      let t=drawBack();
+      while(t!==null&&isFlower(t)){P.flowers.push(t);t=drawBack();}
+      if(t===null)break;
+      P.hand.push(t);
+    }
+    sortHand(p);
+  }
+  G.cur=G.dealer;
+  render();
+  status("Hand "+G.handNum+" — "+NAMES[G.dealer]+" deals 開局");
+  await wait(900);
+  gameTurn(false);
+}
+
+async function gameTurn(skipDraw){
+  const p=G.cur,P=G.players[p];
+  render();
+  if(!skipDraw){
+    status(NAMES[p]+" draws 摸牌");
+    await wait(p===0?350:650);
+    const t=drawFor(p,false);
+    if(t===null){return endDrawnGame();}
+    P.hand.push(t);
+    if(p===0){sortHand(0);G.drawnIdx=P.hand.indexOf(t);
+      // keep drawn tile at its sorted position but highlight; also allow index of duplicate
+    }
+    click(1500);
+    render();
+  }else{
+    G.drawnIdx=-1;render();
+  }
+  if(p===0)await humanTurn(skipDraw);
+  else await aiTurn(p);
+}
+
+async function humanTurn(afterClaim){
+  const P=G.players[0];
+  while(true){
+    sortHand(0);render();
+    const c=countsOf(P.hand);
+    const opts=[];
+    if(!afterClaim&&canWin(c,P.melds.length)&&P.hand.length===14-3*P.melds.length){
+      opts.push({label:"自摸 Win",sub:"self-draw",value:{action:"tsumo"}});
+    }
+    // concealed kong
+    if(!afterClaim)for(let t=0;t<34;t++)if(c[t]===4)
+      opts.push({label:"暗槓",sub:"Kong "+tileName(t),value:{action:"ckong",tile:t}});
+    // added kong
+    if(!afterClaim)for(const m of P.melds)if(m.type==="pung"&&P.hand.includes(m.tiles[0]))
+      opts.push({label:"加槓",sub:"Kong "+tileName(m.tiles[0]),value:{action:"akong",tile:m.tiles[0],meld:m}});
+
+    status("Your turn — click a tile to discard 請打牌");
+    G.canDiscard=true;render();
+    const act=await new Promise(res=>{
+      discardResolve=res;
+      if(opts.length){
+        askButtons(opts).then(v=>{if(discardResolve){discardResolve=null;G.canDiscard=false;res(v);}});
+      }
+    });
+    clearButtons();
+
+    if(act.action==="tsumo"){return endWin(0,null,true);}
+    if(act.action==="ckong"){
+      for(let i=P.hand.length-1;i>=0;i--)if(P.hand[i]===act.tile)P.hand.splice(i,1);
+      P.melds.push({type:"ckong",tiles:[act.tile,act.tile,act.tile,act.tile],from:null});
+      click(900);
+      const r=drawFor(0,true);
+      if(r===null)return endDrawnGame();
+      P.hand.push(r);afterClaim=false;continue;
+    }
+    if(act.action==="akong"){
+      P.hand.splice(P.hand.indexOf(act.tile),1);
+      act.meld.type="kong";act.meld.tiles.push(act.tile);
+      click(900);
+      const r=drawFor(0,true);
+      if(r===null)return endDrawnGame();
+      P.hand.push(r);afterClaim=false;continue;
+    }
+    // discard
+    const t=P.hand.splice(act.idx,1)[0];
+    return doDiscard(0,t);
+  }
+}
+
+async function aiTurn(p){
+  const P=G.players[p];
+  await wait(350);
+  const c=countsOf(P.hand);
+  const fullSize=14-3*P.melds.length;
+  if(P.hand.length===fullSize&&canWin(c,P.melds.length)){
+    return endWin(p,null,true);
+  }
+  // concealed kong
+  for(let t=0;t<34;t++)if(c[t]===4){
+    for(let i=P.hand.length-1;i>=0;i--)if(P.hand[i]===t)P.hand.splice(i,1);
+    P.melds.push({type:"ckong",tiles:[t,t,t,t],from:null});
+    status(NAMES[p]+" declares kong 槓");click(900);render();
+    await wait(600);
+    const r=drawFor(p,true);
+    if(r===null)return endDrawnGame();
+    P.hand.push(r);
+    return aiTurn(p);
+  }
+  // added kong
+  for(const m of P.melds)if(m.type==="pung"&&P.hand.includes(m.tiles[0])){
+    P.hand.splice(P.hand.indexOf(m.tiles[0]),1);
+    m.type="kong";m.tiles.push(m.tiles[0]);
+    status(NAMES[p]+" adds kong 加槓");click(900);render();
+    await wait(600);
+    const r=drawFor(p,true);
+    if(r===null)return endDrawnGame();
+    P.hand.push(r);
+    return aiTurn(p);
+  }
+  const idx=aiChooseDiscard(p);
+  const t=P.hand.splice(idx,1)[0];
+  sortHand(p);
+  return doDiscard(p,t);
+}
+
+async function doDiscard(p,tile){
+  G.players[p].discards.push(tile);
+  G.lastDiscard={player:p,tile,live:true};
+  G.drawnIdx=-1;G.canDiscard=false;
+  click(1200);
+  status(NAMES[p]+" discards "+tileName(tile));
+  render();
+  await wait(450);
+  const claim=await resolveClaims(p,tile);
+  if(claim===undefined)return; // hand ended inside (win)
+  if(claim){
+    // remove tile from discard pile — it was claimed
+    G.players[p].discards.pop();
+    G.lastDiscard=null;
+    const q=claim.player,Q=G.players[q];
+    if(claim.type==="pung"){
+      let rm=0;
+      for(let i=Q.hand.length-1;i>=0&&rm<2;i--)if(Q.hand[i]===tile){Q.hand.splice(i,1);rm++;}
+      Q.melds.push({type:"pung",tiles:[tile,tile,tile],from:p});
+      status(NAMES[q]+" pung 碰!");click(800);
+      G.cur=q;render();await wait(600);
+      return gameTurn(true);
+    }
+    if(claim.type==="kong"){
+      let rm=0;
+      for(let i=Q.hand.length-1;i>=0&&rm<3;i--)if(Q.hand[i]===tile){Q.hand.splice(i,1);rm++;}
+      Q.melds.push({type:"kong",tiles:[tile,tile,tile,tile],from:p});
+      status(NAMES[q]+" kong 槓!");click(800);
+      G.cur=q;render();await wait(600);
+      const r=drawFor(q,true);
+      if(r===null)return endDrawnGame();
+      Q.hand.push(r);if(q===0)sortHand(0);
+      if(q===0)return humanTurn(false);
+      return aiTurn(q);
+    }
+    if(claim.type==="chow"){
+      for(const t of claim.opt.remove)Q.hand.splice(Q.hand.indexOf(t),1);
+      Q.melds.push({type:"chow",tiles:claim.opt.tiles.slice(),from:p});
+      status(NAMES[q]+" chow 上!");click(800);
+      G.cur=q;render();await wait(600);
+      return gameTurn(true);
+    }
+  }
+  if(G.lastDiscard)G.lastDiscard.live=false;
+  G.cur=(p+1)%4;
+  return gameTurn(false);
+}
+
+// returns {player,type,opt?} | null | undefined (undefined = hand ended by win)
+async function resolveClaims(discarder,tile){
+  G.humanPassed=false;
+  // 1) wins, in turn order after discarder
+  for(let k=1;k<=3;k++){
+    const q=(discarder+k)%4;
+    if(!playerCanWinOn(q,tile))continue;
+    if(q===0){
+      status("You can win on "+tileName(tile)+"!");
+      const v=await askButtons([
+        {label:"食糊 Win",sub:tileName(tile),value:"win"},
+        {label:"過 Pass",value:"pass",pass:true}
+      ]);
+      if(v==="win"){await endWin(0,tile,false,discarder);return undefined;}
+    }else{
+      await endWin(q,tile,false,discarder);return undefined;
+    }
+  }
+  // 2) pung / kong (any player)
+  for(let k=1;k<=3;k++){
+    const q=(discarder+k)%4,Q=G.players[q];
+    const c=countsOf(Q.hand);
+    if(c[tile]<2)continue;
+    if(q===0){
+      const opts=[{label:"碰 Pung",sub:tileName(tile),value:"pung"}];
+      if(c[tile]>=3)opts.push({label:"槓 Kong",sub:tileName(tile),value:"kong"});
+      // chow also possible for the human at the same moment?
+      let chOpts=null;
+      if((discarder+1)%4===0){chOpts=chowOptions(Q.hand,tile);
+        for(const o of chOpts)opts.push({label:"上 Chow",sub:o.tiles.map(tileName).join(" "),value:{chow:o}});}
+      opts.push({label:"過 Pass",value:"pass",pass:true});
+      status(NAMES[discarder]+" discarded "+tileName(tile)+" — claim?");
+      const v=await askButtons(opts);
+      if(v==="pung")return{player:0,type:"pung"};
+      if(v==="kong")return{player:0,type:"kong"};
+      if(v&&v.chow)return{player:0,type:"chow",opt:v.chow};
+      // passed: fall through, but avoid re-asking human for chow below
+      G.humanPassed=true;
+    }else{
+      if(c[tile]===3&&aiWantsKongDiscard(q,tile)&&aiWantsPung(q,tile))return{player:q,type:"kong"};
+      if(aiWantsPung(q,tile))return{player:q,type:"pung"};
+    }
+  }
+  // 3) chow — only next player
+  const nq=(discarder+1)%4,NQ=G.players[nq];
+  if(nq===0){
+    if(!G.humanPassed&&countsOf(NQ.hand)[tile]<2){
+      const opts=chowOptions(NQ.hand,tile);
+      if(opts.length){
+        const btns=opts.map(o=>({label:"上 Chow",sub:o.tiles.map(tileName).join(" "),value:{chow:o}}));
+        btns.push({label:"過 Pass",value:"pass",pass:true});
+        status(NAMES[discarder]+" discarded "+tileName(tile)+" — chow?");
+        const v=await askButtons(btns);
+        if(v&&v.chow){G.humanPassed=false;return{player:0,type:"chow",opt:v.chow};}
+      }
+    }
+  }else{
+    const o=aiWantsChow(nq,tile);
+    if(o){G.humanPassed=false;return{player:nq,type:"chow",opt:o};}
+  }
+  G.humanPassed=false;
+  return null;
+}
+
+/* ================= hand end ================= */
+async function endWin(p,winTile,selfDraw,discarder){
+  G.started=false;clearButtons();
+  const P=G.players[p];
+  // for a self-draw the winning tile is already in hand, so pop one copy
+  // before calcFan (which re-adds the winning tile to the counts)
+  let result;
+  if(selfDraw){
+    const last=P.hand.pop(); // temporarily remove one copy so calcFan re-adds it
+    result=calcFan(G,p,last,true);
+    P.hand.push(last);
+  }else{
+    result=calcFan(G,p,winTile,false);
+  }
+  const pts=result.pts;
+  const delta=[0,0,0,0];
+  if(selfDraw){
+    for(let i=0;i<4;i++)if(i!==p){delta[i]-=pts;delta[p]+=pts;}
+  }else{
+    delta[discarder]-=pts;delta[p]+=pts;
+  }
+  for(let i=0;i<4;i++)G.scores[i]+=delta[i];
+  render();
+  click(600);await wait(200);click(500);
+
+  // build overlay
+  const full=P.hand.slice();
+  if(!selfDraw)full.push(winTile);
+  full.sort((a,b)=>a-b);
+  let html='<h2>'+(p===0?"You win! 食糊 🎉":NAMES[p]+" wins 食糊")+'</h2>';
+  html+='<p>'+(selfDraw?"Self-draw 自摸":"Off "+NAMES[discarder]+"'s discard 出銃")+
+    (winTile!==null&&winTile!==undefined?" — winning tile "+tileName(winTile):"")+'</p>';
+  html+='<div class="tilespread" id="ov-tiles"></div>';
+  html+='<h3>Fan 番</h3>';
+  for(const f of result.fans)html+='<div class="fanline"><span>'+f[0]+'</span><span>'+f[1]+' fan</span></div>';
+  html+='<div class="total"><span>Total (cap 13)</span><span>'+result.fan+' fan → '+pts+' pts'+(selfDraw?" × 3":"")+'</span></div>';
+  html+='<h3>Scores</h3><table>';
+  for(let i=0;i<4;i++){
+    const d=delta[i];
+    html+='<tr><td>'+NAMES[i]+'</td><td class="'+(d>0?"pos":d<0?"neg":"")+'">'+(d>0?"+":"")+d+'</td><td>'+G.scores[i]+'</td></tr>';
+  }
+  html+='</table><div class="btnrow"><button class="btn" id="ov-next">Next hand 下一局</button></div>';
+  showPanel(html);
+  // render winning tiles
+  const spread=$("ov-tiles");
+  for(const m of P.melds){
+    const box=document.createElement("div");box.className="meld";
+    for(const t of m.tiles)box.appendChild(tileEl(t,"t-md"));
+    spread.appendChild(box);
+  }
+  const box=document.createElement("div");box.className="meld";
+  for(const t of full)box.appendChild(tileEl(t,"t-md"));
+  spread.appendChild(box);
+  $("ov-next").addEventListener("click",()=>{hidePanel();nextHand(p);});
+}
+
+function endDrawnGame(){
+  G.started=false;clearButtons();
+  let html='<h2>Drawn hand 流局</h2><p>The wall is exhausted — no winner this hand. The dealer stays on.</p>';
+  html+='<div class="btnrow"><button class="btn" id="ov-next">Next hand 下一局</button></div>';
+  showPanel(html);
+  $("ov-next").addEventListener("click",()=>{hidePanel();nextHand(null);});
+}
+
+function nextHand(winner){
+  G.handNum++;
+  if(winner===null||winner===G.dealer){
+    // dealer stays
+  }else{
+    const nd=(G.dealer+1)%4;
+    if(nd===0&&G.dealer===3)G.prevailing=(G.prevailing+1)%4;
+    G.dealer=nd;
+  }
+  startHand();
+}
+
+/* ================= panels ================= */
+function showPanel(html){$("panel").innerHTML=html;$("overlay").classList.add("show");}
+function hidePanel(){$("overlay").classList.remove("show");}
+
+function showRules(){
+  showPanel(
+  '<h2>How to play 玩法</h2>'+
+  '<p><b>Goal:</b> complete a hand of <b>4 melds + 1 pair</b> (四搭一對). A meld is a '+
+  '<b>chow 上</b> (run of 3 in one suit), <b>pung 碰</b> (3 identical) or <b>kong 槓</b> (4 identical).</p>'+
+  '<p><b>Your turn:</b> a tile is drawn automatically — click any tile in your hand to discard it. '+
+  'When another player discards, buttons appear if you can claim: chow only from the player on your left (陳叔), '+
+  'pung/kong/win from anyone. Flowers 花 are revealed and replaced automatically.</p>'+
+  '<p><b>Winning 食糊:</b> take the winning tile from a discard, or draw it yourself (自摸, +1 fan). '+
+  'Fan 番 are counted from patterns — all chows 平糊 (1), all pungs 對對糊 (3), mixed one suit 混一色 (3), '+
+  'pure one suit 清一色 (7), dragon pungs 中發白 (1 each), seat/prevailing wind pungs (1), seat flowers 正花 (1), '+
+  'no flowers (1), concealed hand 門前清 (1), thirteen orphans 十三么 (13). Capped at 13 fan.</p>'+
+  '<p><b>Payments:</b> on a discard win the discarder 出銃 pays the winner; on self-draw all three players pay. '+
+  'Payout scale: 1 fan = 2, 3 fan = 8, 5 fan = 24, 7 fan = 48, 10 fan = 128, 13 fan = 384. '+
+  'Dealer 莊 stays after winning or a drawn hand, otherwise the deal rotates and the prevailing wind 圈風 advances each full round.</p>'+
+  '<p><b>Tiles:</b> 萬 characters (red), 筒 dots (blue), 條 bamboo (green), winds 東南西北, dragons 中發白, flowers 梅蘭菊竹春夏秋冬.</p>'+
+  '<div class="btnrow"><button class="btn" id="ov-close">Close 關閉</button></div>');
+  $("ov-close").addEventListener("click",hidePanel);
+}
+
+/* ================= boot ================= */
+$("btn-rules").addEventListener("click",showRules);
+$("btn-new").addEventListener("click",()=>{
+  G.scores=[500,500,500,500];G.dealer=0;G.prevailing=0;G.handNum=1;
+  hidePanel();startHand();
+});
+showPanel(
+  '<h2>香港麻雀 Hong Kong Mahjong</h2>'+
+  '<p>You play East 東 against three AI opponents: Ah Bo 阿寶, Mei Ling 美玲 and Uncle Chan 陳叔. '+
+  'Standard Hong Kong rules — 4 melds and a pair, flowers, chow/pung/kong claims, and fan 番 scoring. '+
+  'Everyone starts with 500 points. Works fully offline.</p>'+
+  '<div class="btnrow"><button class="btn" id="ov-rules2">Rules 玩法</button>'+
+  '<button class="btn" id="ov-start">Start 開局</button></div>');
+$("ov-rules2").addEventListener("click",showRules);
+$("ov-start").addEventListener("click",()=>{hidePanel();startHand();});
+</script>
+</body>
+</html>
