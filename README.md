@@ -73,7 +73,7 @@ A few rules are intentionally simplified: no robbing the kong (搶槓), no minim
 
 ## License
 
-MIT. Do whatever you like with it, a mention is appreciated.
+Released under the [MIT License](LICENSE). You are free to use, copy, modify, and distribute this software for any purpose. The software is provided "as is", without warranty of any kind. See the [LICENSE](https://github.com/arifkyi/hk-mahjong/blob/main/LICENSE) file for the full text. A mention is appreciated.
 
 ---
 
