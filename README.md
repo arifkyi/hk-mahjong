@@ -76,5 +76,4 @@ A few rules are intentionally simplified: no robbing the kong (搶槓), no minim
 Released under the [MIT License](LICENSE). You are free to use, copy, modify, and distribute this software for any purpose. The software is provided "as is", without warranty of any kind. See the [LICENSE](https://github.com/arifkyi/hk-mahjong/blob/main/LICENSE) file for the full text. A mention is appreciated.
 
 ---
-
-Built by [Rifky The Cyber](https://youtube.com/@RifkyTheCyber). If you enjoy the game, you can support my work on [Ko-fi](https://ko-fi.com/rifkythecyber).
+If you enjoy the game, you can support my work on [Ko-fi](https://ko-fi.com/rifkythecyber).
