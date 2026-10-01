@@ -7,6 +7,8 @@ Game mahjong Hong Kong lengkap dalam satu file HTML. Kamu bermain melawan tiga l
 **Main online:** https://arifkyi.github.io/hk-mahjong/HK-Mahjong.html
 **Unduh:** [`HK-Mahjong.html`](HK-Mahjong.html)
 
+![Tampilan Hong Kong Mahjong](screenshot.png)
+
 ## Fitur
 
 - Set lengkap 144 tile digambar sebagai SVG: karakter 萬, lingkaran 筒, bambu 條, angin 東南西北, naga 中發白, serta 8 tile bunga dan musim

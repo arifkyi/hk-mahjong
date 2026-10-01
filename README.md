@@ -7,6 +7,8 @@ A complete Hong Kong mahjong game in a single HTML file. You play against three 
 **Play online:** https://arifkyi.github.io/hk-mahjong/HK-Mahjong.html
 **Download:** [`HK-Mahjong.html`](HK-Mahjong.html)
 
+![Hong Kong Mahjong screenshot](screenshot.png)
+
 ## Features
 
 - Full 144-tile set drawn as inline SVG: characters 萬, dots 筒, bamboo 條, winds 東南西北, dragons 中發白, and 8 flower and season tiles
