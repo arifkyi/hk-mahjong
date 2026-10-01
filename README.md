@@ -1,79 +1,120 @@
 # Hong Kong Mahjong 香港麻雀
 
-A complete Hong Kong style mahjong game in a single HTML file. You play against three AI opponents. No installation, no dependencies, no internet connection needed. Download the file, double-click it, and play in any modern browser.
+[English](README.md) · [Bahasa Indonesia](README.id.md)
 
-![Hong Kong Mahjong screenshot](screenshot.png)
+A complete Hong Kong mahjong game in a single HTML file. You play against three computer opponents. No installation, no dependencies, no internet connection. Download the file, double-click it, and play in any modern browser.
 
-## Quick start
-
-```
-git clone https://github.com/arifkyi/hk-mahjong.git
-open hk-mahjong/HK-Mahjong.html
-```
-
-Or just download `HK-Mahjong.html` and open it directly. Everything (HTML, CSS, JavaScript) lives in that one file. Works offline on macOS, Windows, and Linux with Safari, Chrome, Firefox, or Edge.
+**Play online:** https://arifkyi.github.io/hk-mahjong/HK-Mahjong.html
+**Download:** [`HK-Mahjong.html`](HK-Mahjong.html)
 
 ## Features
 
-- Full 144-tile set: characters 萬, dots 筒, bamboo 條, winds 東南西北, dragons 中發白, and 8 flower tiles with automatic reveal and replacement
-- Standard Hong Kong winning hand: 4 melds and 1 pair, plus 十三么 (Thirteen Orphans) as a special hand
-- All claim types: chow 上 (left player only), pung 碰, exposed/concealed/added kong 槓 with replacement draws from the wall tail
-- Three AI opponents that evaluate their hands with a shanten calculator and only claim tiles when it actually improves their hand
-- Real fan 番 scoring capped at 13 fan, with the classic doubling payout table
-- Dealer rotation, prevailing wind 圈風 progression, and running scores across hands
-- Bilingual interface (English and Traditional Chinese)
+- Full 144-tile set drawn as inline SVG: characters 萬, dots 筒, bamboo 條, winds 東南西北, dragons 中發白, and 8 flower and season tiles
+- Two views: a 3D table and a top-down view, switched with one button
+- Interface in English and Indonesian, switched with one button
+- Player names you can change, including your own
+- Claim buttons show the actual tiles: the incoming tile is outlined in gold, and the tiles it would take from your hand light up when you hover or touch the button
+- The tile you just drew sits apart at the right end of your hand
+- The wall around the table shrinks as tiles are drawn
+- Full faan 番 breakdown after every win, so you can check your own counting
+- Minimum faan to win is selectable: 0, 1 or 3
 
 ## Rules implemented
 
-**Winning**: Complete 4 melds (chow, pung, or kong) plus a pair. Win off a discard (食糊) or by self-draw (自摸, worth 1 extra fan).
+Four sets plus one pair, or Seven Pairs, or Thirteen Orphans. Chow only from the player on your left; pung, kong and winning from anyone. Flowers are revealed and replaced automatically. Play stops when only the 14 dead wall tiles remain.
 
-**Fan scoring** includes:
-
-| Pattern | Fan |
+| Hand pattern | Faan |
 |---|---|
+| 雞糊 Chicken hand | 0 |
 | 平糊 All chows | 1 |
-| 自摸 Self-draw | 1 |
-| 門前清 Concealed hand | 1 |
-| 正花 Seat flower / 無花 No flowers | 1 each |
-| 門風 / 圈風 Seat or prevailing wind pung | 1 each |
-| 中發白 Dragon pung | 1 each |
+| 花幺九 Mixed orphans | 1 (always with All pungs) |
 | 對對糊 All pungs | 3 |
 | 混一色 Mixed one suit | 3 |
-| 小三元 Small three dragons | 5 |
-| 小四喜 Small four winds | 6 |
+| 小三元 Small dragons | 3 (+1 per dragon pung) |
+| 七對子 Seven pairs | 4 (variant rule) |
+| 大三元 Great dragons | 5 (+1 per dragon pung) |
+| 小四喜 Small winds | 6 |
 | 清一色 Pure one suit | 7 |
-| 大三元 Big three dragons | 8 |
-| 字一色 All honors | 10 |
-| 十三么 / 大四喜 / 八仙過海 | 13 (limit) |
 
-**Payouts**: 1 fan = 2 pts, 3 fan = 8, 5 fan = 24, 7 fan = 48, 10 fan = 128, 13 fan = 384. On a discard win the discarder (出銃) pays the winner. On self-draw all three opponents pay. Everyone starts with 500 points.
+Limit hands 例牌 score on their own, with no wind, dragon or flower bonus added:
 
-**Dealer**: The dealer stays after winning or after a drawn hand (流局). Otherwise the deal rotates, and the prevailing wind advances after each full round.
+| Limit hand | Faan |
+|---|---|
+| 字一色 All honours | 10 |
+| 清么九 All terminals | 10 |
+| 九子連環 Nine gates | 10 |
+| 坎坎糊 Four concealed pungs | 10 |
+| 大四喜 Great winds | 13 |
+| 十八羅漢 Four kongs | 13 |
+| 十三么 Thirteen orphans | 13 |
+| 天糊 / 地糊 Heavenly / earthly hand | 13 |
+| 八仙過海 All eight flowers | 13 |
+
+Bonus points: 正花 seat flower 1, 無花 no flowers 1, 一台花 complete flower or season set 2, 役牌 dragon pung 1 each, 門風 seat wind 1, 圈風 prevailing wind 1, 自摸 self-draw 1, 門前清 concealed hand 1, 槓上開花 replacement tile 1, 搶槓 robbing the kong 1, 海底撈月 last catch 1.
+
+Values follow the [Hong Kong mahjong scoring rules](https://en.wikipedia.org/wiki/Hong_Kong_mahjong_scoring_rules) on Wikipedia. Tables and associations vary; the HKMA, for example, caps hands at 10 faan.
+
+**Points:** points equal the faan value and everyone starts at 0. On a discard win only the discarder loses points; on a self-draw each of the other three loses points. Points are only a way of keeping score. There is no betting of any kind in this game.
+
+## Security and integrity
+
+This game is a single HTML file with no network access of any kind. Everything below is checkable by anyone.
+
+**1. It works with the internet switched off.** Turn off your wifi, open the file, and play a full game. Nothing stops working, because nothing is ever fetched or sent.
+
+**2. The file blocks its own network access.** The page carries a Content Security Policy that the browser enforces:
+
+```
+default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';
+img-src 'none'; connect-src 'none'; font-src 'none'; frame-src 'none';
+object-src 'none'; base-uri 'none'; form-action 'none'
+```
+
+`connect-src 'none'` means the browser itself refuses any outbound request from this page, whatever the code tries to do.
+
+**3. Verify the file you have is the file I published.**
+
+```
+SHA-256  ee1e4c1f90220ee551f47f56cca601cf0c339f5064fb3d97c1c6684c004da18d
+```
+
+```bash
+# macOS / Linux
+shasum -a 256 HK-Mahjong.html
+# Windows PowerShell
+Get-FileHash HK-Mahjong.html -Algorithm SHA256
+```
+
+If your hash is different, the file has been modified and did not come from me.
+
+**4. Independent antivirus scan.** Scanned by 59 antivirus engines on VirusTotal: **0 detections**.
+
+[View the full report](https://www.virustotal.com/gui/file/ee1e4c1f90220ee551f47f56cca601cf0c339f5064fb3d97c1c6684c004da18d)
+
+The report is tied to the SHA-256 above, so it describes exactly this file and nothing else.
+
+**5. One official source.** The only official copies are this repository and the GitHub Pages link above. A copy received through WhatsApp, Telegram, a file-sharing site or any other channel is outside my control. Check the hash before trusting it.
+
+**6. The code is readable.** It is never minified or obfuscated, and there are no encoded blobs. Open it in any text editor and read it.
+
+## Privacy
+
+The game stores two things in your own browser, using `localStorage`: your chosen interface language and the four player names. They stay on your device, are never transmitted, and you can clear them by clearing site data for the file. Nothing else is stored, and no analytics or tracking of any kind is present.
 
 ## How to play
 
 1. A tile is drawn automatically on your turn. Click any tile in your hand to discard it.
-2. When an opponent discards a tile you can use, action buttons appear: 上 Chow, 碰 Pung, 槓 Kong, 食糊 Win, or 過 Pass.
-3. Concealed kong (暗槓) and added kong (加槓) buttons appear on your own turn when available.
-4. Flowers are revealed and replaced for you automatically.
-5. The Rules 玩法 button in the top bar has the full reference.
-
-## Technical notes
-
-- Single self-contained file, roughly 40 KB, zero external resources (no CDNs, no fonts, no images)
-- Win detection uses full recursive hand decomposition into melds and a pair
-- AI discard and claim decisions are driven by a standard shanten (tiles-from-ready) calculator
-- Fan counting enumerates all valid decompositions of the winning hand and scores the highest interpretation
-- Tile faces are rendered with CSS and CJK text, so no image assets are needed
-- No localStorage or cookies. Scores persist for the session only
-
-## Limitations
-
-A few rules are intentionally simplified: no robbing the kong (搶槓), no minimum fan requirement (chicken hands 雞糊 are allowed), and the payout uses a flat shooter-pays model rather than regional half-payment variants. Pull requests welcome if you want to add your house rules.
+2. When an opponent discards a tile you can use, buttons appear: 上 Chow, 碰 Pung, 槓 Kong, 食糊 Hu or 過 Pass.
+3. Concealed kong 暗槓 and added kong 加槓 buttons appear on your own turn when available.
+4. If the tile you drew completes your hand, a 自摸 Win button appears with the faan count.
+5. Each name plate shows the seat wind and the seat number: 東 1, 南 2, 西 3, 北 4. That number is also the flower or season number that scores 正花 for that player.
+6. The red tile in the middle is the round wind 圈風. It is the same for everyone and is not a seat.
 
 ## License
 
-Released under the [MIT License](LICENSE). You are free to use, copy, modify, and distribute this software for any purpose. The software is provided "as is", without warranty of any kind. See the [LICENSE](https://github.com/arifkyi/hk-mahjong/blob/main/LICENSE) file for the full text. A mention is appreciated.
+MIT License © 2026 Ahmad Rifky Idrus
 
----
-If you enjoy the game, you can support my work on [Ko-fi](https://ko-fi.com/rifkythecyber).
+## Credits
+
+Made by Rifky, [rifky the lifestyle](https://www.youtube.com/@rifkythelifestyle) on YouTube.
+If this is useful to you, you can support my work at [ko-fi.com/rifkythecyber](https://ko-fi.com/rifkythecyber).
